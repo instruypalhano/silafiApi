@@ -22,7 +22,7 @@ async def get_vwcliente():
         cursor = conn.cursor()
 
         # Executar a consulta na view vwcliente
-        cursor.execute("SELECT * FROM vwcliente")
+        cursor.execute("SELECT top 10 * FROM vwcliente")
         rows = cursor.fetchall()
 
         # Converter as linhas para uma lista de dicionários
