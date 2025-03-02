@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: silafiApi
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: ./start.sh
+    envVars:
+      - key: DB_DRIVER
+        value: ODBC Driver 17 for SQL Server
+      - key: DB_SERVER
+        value: hfg09bvzjnf.sn.mynetname.net,1433
+      - key: DB_NAME
+        value: Biodata
+      - key: DB_USER
+        value: sa
+      - key: DB_PASSWORD
+        value: @1qazone56

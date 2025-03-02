@@ -1,41 +1,48 @@
-import pymssql
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
+import pyodbc
+from dotenv import load_dotenv
 import os
 
 app = FastAPI()
 
-# Configurações de conexão com o SQL Server
-SERVER = os.getenv("DB_SERVER")
-DATABASE = os.getenv("DB_DATABASE")
-USERNAME = os.getenv("DB_USERNAME")
-PASSWORD = os.getenv("DB_PASSWORD")
+# Carregar variáveis de ambiente do arquivo .env
+load_dotenv()
+
+# Configuração de conexão com o SQL Server
+conn_str = (
+    f"DRIVER={os.getenv('DB_DRIVER')};"
+    f"SERVER={os.getenv('DB_SERVER')};"
+    f"DATABASE={os.getenv('DB_NAME')};"
+    f"UID={os.getenv('DB_USER')};"
+    f"PWD={os.getenv('DB_PASSWORD')}"
+)
 
 
-@app.get("/vwcliente/")
-async def get_vwcliente():
+@app.on_event("startup")
+def startup():
+    global conn
+    conn = pyodbc.connect(conn_str)
+
+
+@app.on_event("shutdown")
+def shutdown():
+    conn.close()
+
+
+@app.get("/dados")
+def get_dados():
     try:
-        # Conectar ao banco de dados usando pymssql
-        conn = pymssql.connect(server=SERVER, user=USERNAME,
-                               password=PASSWORD, database=DATABASE)
         cursor = conn.cursor()
-
-        # Executar a consulta na view vwcliente
-        cursor.execute("SELECT top 10 * FROM vwcliente")
+        cursor.execute('SELECT TOP 100 * FROM vwcliente')
         rows = cursor.fetchall()
 
-        # Converter as linhas para uma lista de dicionários
-        clientes = [
-            dict(zip([column[0] for column in cursor.description], row)) for row in rows]
+        # Obter os nomes das colunas
+        columns = [column[0] for column in cursor.description]
 
-        # Retornar a resposta JSON
-        return JSONResponse(content=jsonable_encoder(clientes))
+        # Transformar os dados em um formato adequado para JSON
+        dados = [dict(zip(columns, row)) for row in rows]
 
+        return dados
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Erro ao buscar dados: {str(e)}")
-
-    finally:
-        if conn:
-            conn.close()
+            status_code=500, detail=f"Erro ao buscar dados: {e}")
